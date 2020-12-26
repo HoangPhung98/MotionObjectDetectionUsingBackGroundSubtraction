@@ -1,38 +1,52 @@
 import cv2 as cv
 import numpy as np
-
+from blob import Blob
 
 def frameDiff(uri):
-    # kernel = np.ones((7, 7), np.float32) / 49
 
     video = cv.VideoCapture(uri)
     ret, pre_img = video.read()
     shape = pre_img.shape
     h = shape[0] // 2
     w = shape[1] // 2
-    pre_img = cv.resize(pre_img, (w, h))
+
     pre_img = cv.cvtColor(pre_img, cv.COLOR_BGR2GRAY)
-    pre_img = cv.GaussianBlur(pre_img, (5, 5), 0)
-    # pre_img = cv.filter2D(pre_img, -1, kernel)
-    pre_sub = pre_img
+    pre_img = cv.pyrDown(pre_img)
+    pre_img = cv.pyrDown(pre_img)
+
+    pre_sub = pre_img*0
+
+    #write video
+    out_fourcc = cv.VideoWriter_fourcc(*'XVID')
+    out_diff = cv.VideoWriter("out_diff.avi", out_fourcc, 25.0, (len(pre_img[0]), len(pre_img)), True)
 
     while True:
         # recent frame
         ret, img = video.read()
-        img = cv.resize(img, (w, h))
-        img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        img = cv.GaussianBlur(img, (5, 5), 0)
+        # img = cv.resize(img, (w, h))
+        img = cv.pyrDown(img)
+        img = cv.pyrDown(img)
+
+        img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
         # sub 2 frame
-        sub = cv.absdiff(img, pre_img)
+        sub = cv.absdiff(img_gray, pre_img)
 
         diff = cv.absdiff(sub, pre_sub)
         # update pre_img
-        pre_img = img
+        pre_img = img_gray
         pre_sub = sub
 
         # threshode
-        ret, mask = cv.threshold(diff, 12, 255, cv.THRESH_BINARY)
+        ret, mask = cv.threshold(diff, 20, 255, cv.THRESH_BINARY)
+        kernel = np.ones((3,3), np.uint8)
+        mask = cv.dilate(mask, kernel)
+        # mask = cv.morphologyEx(mask, cv.MORPH_OPEN,kernel)
+        blobs = blobDetection(mask)
+        frameBlobs(blobs, img)
+
+        # write video
+        out_diff.write(img)
 
         cv.namedWindow("original")
         cv.resizeWindow("original", w, h)
@@ -40,7 +54,6 @@ def frameDiff(uri):
         cv.resizeWindow("mask_diff", w, h)
 
         cv.imshow("original", img)
-        # cv.imshow("sub", sub)
         cv.imshow("mask_diff", mask)
 
         key = cv.waitKey(10)
@@ -49,8 +62,9 @@ def frameDiff(uri):
         if key == ord(' '):
             cv.waitKey()
 
-    cv.destroyAllWindows()
+        print(len(blobs))
 
+    cv.destroyAllWindows()
 
 def mean(n, uri):
     # kernel_2d = np.ones((7, 7), np.float32) / 49
@@ -108,7 +122,6 @@ def mean(n, uri):
         if key == ord(' '):
             cv.waitKey()
 
-
 def mog(uri):
     backsub = cv.createBackgroundSubtractorMOG2()
     video = cv.VideoCapture(uri)
@@ -137,7 +150,6 @@ def mog(uri):
             break
         if key == ord(' '):
             cv.waitKey()
-
 
 def all(n, uri):
     video = cv.VideoCapture(uri)
@@ -222,20 +234,58 @@ def all(n, uri):
             cv.waitKey()
 
 
+def belongToAlreadyExistedBlob(x, y, blobs):
+
+    for i in range(len(blobs)):
+        blob = blobs[i]
+        if blob.isBelongToThisBlob(x,y):
+            blob.updateBoundary(x,y)
+            return True
+
+    return False
+
+
+def filterNoiseBlobs(blobs):
+    lenBlobs = len(blobs)
+    i=0
+    while i<lenBlobs:
+        blob = blobs[i]
+        if blob.isThisBlobNoise():
+            blobs.remove(blob)
+            lenBlobs-=1
+        else:
+            i+=1
+
+def blobDetection(foreground):
+    blobs = []
+    w = len(foreground[0])
+    h = len(foreground)
+    for i in range(h):
+        for j in range(w):
+            if foreground[i][j] == 255:
+                if not belongToAlreadyExistedBlob(j,i, blobs):
+                    # creat new blob that bound the current pixel
+                    blobs.append(Blob(j,i,j,i))
+
+    filterNoiseBlobs(blobs)
+    return blobs
+
+def frameBlobs(blobs, img):
+    for i in range(len(blobs)):
+        blob = blobs[i]
+        cv.rectangle(img, (blob.minx-1, blob.miny-1), (blob.maxx+1, blob.maxy+1), blob.color, blob.thickness)
+
 # main
 uri_road = r"road.mp4"
-uri_road2 = r"road2.mp4"
-
-uri_moto = r"moto.mp4"
-uri_moto2 = r"moto2.mp4"
-
-
-uri_leaf = r"leaf.mp4"
+uri_road_1D = r"road_1D.mp4"
 uri_human = r"human.mp4"
 #
-# frameDiff(uri_road)
+frameDiff(uri_road)
+# frameDiff(uri_road_1D)
+# frameDiff(uri_human)
+
 # mean(10, uri_road)
-mog(uri_road)
+# mog(uri_road)
 # mog(uri_moto)
 
 # frameDiff(uri_road2)
@@ -256,7 +306,6 @@ mog(uri_road)
 # all(10, uri_road)
 # all(10, uri_moto)
 # all(10, uri_moto2)
-
 
 # all(10, uri_leaf)
 # all(10, uri_human)
