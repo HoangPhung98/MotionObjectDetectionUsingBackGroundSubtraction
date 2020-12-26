@@ -3,8 +3,8 @@ import numpy as np
 class Blob:
     color = (0, 255, 0)
     thickness = 1
-    euclidDistanceThreshold = 5
-    noiseBlobAreaThreshold = 150
+    euclidDistanceThreshold = 4
+    noiseBlobAreaThreshold = 110
 
     def __init__(self, minx, miny, maxx, maxy):
         self.minx = minx
@@ -52,6 +52,7 @@ class Blob:
             return False
 
     def isBelongToThisBlob(self, x, y):
+
         if x >= self.minx and x <= self.maxx and y >= self.miny and y <= self.maxy:
             return True
 
@@ -79,15 +80,15 @@ class Blob:
                     else:
                         return self.isNear(self.maxx, self.maxy, x, y)
 
-        # centerx = (self.minx + self.maxx) // 2
-        # centery = (self.miny + self.maxy) // 2
-        #
-        # # euclid distance
-        # educlid_distance = np.sqrt((centerx - x)**2 + (centery - y)**2)
-        # if educlid_distance <= self.euclidDistanceThreshold:
-        #     return True
-        # else:
-        #     return False
+        centerx = (self.minx + self.maxx) // 2
+        centery = (self.miny + self.maxy) // 2
+
+        # euclid distance
+        educlid_distance = np.sqrt((centerx - x)**2 + (centery - y)**2)
+        if educlid_distance <= self.euclidDistanceThreshold:
+            return True
+        else:
+            return False
 
     def getArea(self):
         area = (self.maxx - self.minx)*(self.maxy - self.miny)

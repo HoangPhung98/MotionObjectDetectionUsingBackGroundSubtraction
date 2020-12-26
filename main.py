@@ -72,16 +72,16 @@ def mean(n, uri):
 
     video = cv.VideoCapture(uri)
     ret, img = video.read()
-    shape = img.shape
-    h = shape[0] // 2
-    w = shape[1] // 2
+    img = cv.pyrDown(img)
+    img = cv.pyrDown(img)
     nframe = []
-    sum = np.zeros((h, w))
+    sum = np.zeros((len(img), len(img[0])))
     for i in range(n):
         ret, img = video.read()
+        img = cv.pyrDown(img)
+        img = cv.pyrDown(img)
+
         img = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
-        img = cv.resize(img, (w, h))
-        img = cv.GaussianBlur(img, (5, 5), 0)
         nframe.append(img)
         sum = sum + img
     mean = np.uint8(sum // n)
@@ -90,17 +90,20 @@ def mean(n, uri):
 
     while True:
         ret, img = video.read()
-        img = cv.resize(img, (w, h))
-        img = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
-        img = cv.GaussianBlur(img, (5, 5), 0)
+        # img = cv.resize(img, (w, h))
+        img = cv.pyrDown(img)
+        img = cv.pyrDown(img)
 
-        # sub = np.abs(img - mean)
-        sub = cv.absdiff(img, mean)
+        img_gray = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
+        sub = cv.absdiff(img_gray, mean)
         ret, mask = cv.threshold(sub, 30, 255, cv.THRESH_BINARY)
 
-        sum = (sum - nframe[pos] + img)
+        blobs = blobDetection(mask)
+        frameBlobs(blobs, img)
+
+        sum = (sum - nframe[pos] + img_gray)
         mean = np.uint8(sum // n)
-        nframe[pos] = img
+        nframe[pos] = img_gray
         if pos < n - 1:
             pos = pos + 1
         else:
@@ -110,9 +113,9 @@ def mean(n, uri):
         # cv.drawContours(img, contours, -1, (0,255,0), 3)
 
         cv.namedWindow("original")
-        cv.resizeWindow("original", w, h)
+        cv.resizeWindow("original", len(mask[0]), len(mask))
         cv.namedWindow("mask_mean")
-        cv.resizeWindow("mask_mean", w, h)
+        cv.resizeWindow("mask_mean", len(mask[0]), len(mask))
         cv.imshow("original", img)
         cv.imshow("mask_mean", mask)
 
@@ -125,23 +128,23 @@ def mean(n, uri):
 def mog(uri):
     backsub = cv.createBackgroundSubtractorMOG2()
     video = cv.VideoCapture(uri)
-    ret, img = video.read()
-    shape = img.shape
-    h = shape[0] // 2
-    w = shape[1] // 2
+
     while True:
         # recent frame
         ret, img = video.read()
-        img = cv.resize(img, (w, h))
+        img = cv.pyrDown(img)
+        img = cv.pyrDown(img)
         # img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
         fgMask = backsub.apply(img)
-        fgMask = cv.morphologyEx(fgMask, cv.MORPH_OPEN, (11, 11))
+        # fgMask = cv.morphologyEx(fgMask, cv.MORPH_OPEN, (11, 11))
+        blobs = blobDetection(fgMask)
+        frameBlobs(blobs, img)
 
         cv.namedWindow("original")
-        cv.resizeWindow("original", w, h)
+        cv.resizeWindow("original",len(fgMask[0]), len(fgMask))
         cv.namedWindow("mask_mog")
-        cv.resizeWindow("mask_mog", w, h)
+        cv.resizeWindow("mask_mog", len(fgMask[0]), len(fgMask))
         cv.imshow("original", img)
         cv.imshow("mask_mog", fgMask)
 
@@ -280,32 +283,11 @@ uri_road = r"road.mp4"
 uri_road_1D = r"road_1D.mp4"
 uri_human = r"human.mp4"
 #
-frameDiff(uri_road)
+# frameDiff(uri_road)
 # frameDiff(uri_road_1D)
 # frameDiff(uri_human)
 
-# mean(10, uri_road)
-# mog(uri_road)
-# mog(uri_moto)
+# mean(5, uri_road)
 
-# frameDiff(uri_road2)
-# mean(10, uri_road2)
-# mog(uri_road2)
+mog(uri_road)
 
-# mog(uri_moto2)
-
-
-# frameDiff(uri_leaf)
-# mean(15, uri_leaf)
-# mog(uri_leaf)
-
-# frameDiff(uri_human)
-# mean(20, uri_human)
-# mog(uri_human)
-
-# all(10, uri_road)
-# all(10, uri_moto)
-# all(10, uri_moto2)
-
-# all(10, uri_leaf)
-# all(10, uri_human)
