@@ -7,15 +7,43 @@ from blobCounting import BlobCounting
 totalNumberOfBlob = 0
 
 
-def drawBlobCounting(numBlob, img, verticalAxis, horizontalAxis, w, h):
+def drawBlobCounting(numBlob, img, verticalAxis, horizontalAxis, countingWidth, w, h):
     if(verticalAxis!=0):
         cv.line(img, (0, verticalAxis), (w, verticalAxis), (200, 180, 0), 3)
+        cv.line(img, (0, verticalAxis-countingWidth), (w, verticalAxis-countingWidth), (200, 180, 0), 3)
+
     else:
         cv.line(img, (horizontalAxis, 0), (horizontalAxis, h), (255,0,0), 3)
-
+    cv.putText(img,
+               "passed:",
+               (20, 50),
+               fontFace=cv.FONT_HERSHEY_SIMPLEX,
+               fontScale=0.8,
+               color=(0, 255, 255),
+               lineType=3,
+               thickness=1)
     cv.putText(img,
                str(numBlob),
-               (100, 100),
+               (120, 55),
+               fontFace=cv.FONT_HERSHEY_PLAIN,
+               fontScale=3,
+               color=(0, 255, 255),
+               lineType=3,
+               thickness=2)
+
+
+def drawCurrentNumberOfBlob(blobs, img):
+    cv.putText(img,
+               "current:",
+               (20, 100),
+               fontFace=cv.FONT_HERSHEY_SIMPLEX,
+               fontScale=0.8,
+               color=(0, 255, 255),
+               lineType=3,
+               thickness=1)
+    cv.putText(img,
+               str(len(blobs)),
+               (120, 105),
                fontFace=cv.FONT_HERSHEY_PLAIN,
                fontScale=3,
                color=(0, 255, 255),
@@ -47,21 +75,25 @@ def frameDiff(uri):
     out_fourcc = cv.VideoWriter_fourcc(*'XVID')
     out_diff = cv.VideoWriter("out_diff.avi", out_fourcc, 25.0, (len(pre_img[0]), len(pre_img)), True)
 
+
+
+
+
     # previous blobs
     blobDetection = BlobDetetction()
-    blobCounting = BlobCounting(3*h//4, 3*w//4)
+    blobCounting = BlobCounting(4 * h // 5, 4 * w // 5)
 
     # detecting region
     detectingRegion_minx = 0
-    detectingRegion_miny = h//2
+    detectingRegion_miny = h // 2
     detectingRegion_maxx = w
     detectingRegion_maxy = h
 
-    #couting region
-    countingRegion_minx = 0
-    countingRegion_miny = h // 2
-    countingRegion_maxx = w
-    countingRegion_maxy = h
+    # couting region
+    # countingRegion_minx = 0
+    # countingRegion_miny = blobCounting.verticalAxis - 50
+    # countingRegion_maxx = w
+    # countingRegion_maxy = h
 
     while True:
         # recent frame
@@ -79,22 +111,23 @@ def frameDiff(uri):
         pre_sub = sub
         # threshode
         ret, mask = cv.threshold(diff, 20, 255, cv.THRESH_BINARY)
-        # kernel = np.ones((3,3), np.uint8)
+        kernel = np.ones((5,5), np.uint8)
         # mask = cv.dilate(mask, kernel)
-        # mask = cv.morphologyEx(mask, cv.MORPH_OPEN,kernel)
+        mask = cv.morphologyEx(mask, cv.MORPH_CLOSE,kernel)
         blobs = blobDetection.blobDetection(mask, w, h, detectingRegion_minx, detectingRegion_miny, detectingRegion_maxx, detectingRegion_maxy)
         frameBlobs(blobs, img)
 
-        numBlob = blobCounting.countVertical(blobDetection.prevBlobs, countingRegion_minx, countingRegion_miny, countingRegion_maxx, countingRegion_maxy)
+        numBlob = blobCounting.countVertical(blobDetection.prevBlobs)
         # blobDetection.prevBlobs = np.copy(countedBlobs)
         # for i in range(len(blobDetection.prevBlobs)):
         #     blobDetection.prevBlobs[i].isLabelled = False
         # print("prev len:", len(blobDetection.prevBlobs))
 
 
-        drawBlobCounting(numBlob, img, blobCounting.verticalAxis, blobCounting.horizontalAxis, w, h)
+        drawBlobCounting(numBlob, img, blobCounting.verticalAxis, blobCounting.horizontalAxis, blobCounting.countingWidth, w, h)
+        drawCurrentNumberOfBlob(blobs, img)
         # write video
-        # out_diff.write(img)
+        out_diff.write(img)
 
         cv.imshow("original", img)
         cv.imshow("mask_diff", mask)
@@ -309,6 +342,8 @@ uri_topdown = r"topdownview.mp4"
 uri_topdown2 = r"topdownview2.mp4"
 
 uri_trafficgood = r"traffic_good.mp4"
+uri_trafficgood2 = r"traffic_good_2.mp4"
+
 uri_trafficgood3 = r"traffic_good_3.mp4"
 
 #
