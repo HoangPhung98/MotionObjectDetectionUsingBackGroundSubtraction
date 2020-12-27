@@ -3,7 +3,7 @@ import numpy as np
 class Blob:
     color = (0, 255, 0)
     thickness = 1
-    euclidDistanceThreshold = 10
+    euclidDistanceThreshold = 13
     noiseBlobAreaThreshold = 150
 
     def __init__(self, label, isLabelled, minx, miny, maxx, maxy):
@@ -13,6 +13,7 @@ class Blob:
         self.miny = miny
         self.maxx = maxx
         self.maxy = maxy
+        self.isCounted = False
 
     def updateBoundary(self, x, y):
         self.minx = min(self.minx, x)
@@ -92,7 +93,8 @@ class Blob:
                         return self.isNear(self.maxx, self.maxy, x, y)
 
     def isMapOtherBlob(self, blob):
-        if self.isNear(self.minx, self.miny, blob.minx, blob.miny) and self.isNear(self.maxx, self.maxy, blob.maxx, blob.maxy):
+        if self.isNear(self.minx, self.miny, blob.minx, blob.miny) \
+                and self.isNear(self.maxx, self.maxy, blob.maxx, blob.maxy):
             return True
         else:
             return False

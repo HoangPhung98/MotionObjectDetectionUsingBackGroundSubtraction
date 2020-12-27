@@ -1,8 +1,27 @@
 import cv2 as cv
 import numpy as np
 from blob import Blob
+from blobDetection import BlobDetetction
+from blobCounting import BlobCounting
 
 totalNumberOfBlob = 0
+
+
+def drawBlobCounting(numBlob, img, verticalAxis, horizontalAxis, w, h):
+    if(verticalAxis!=0):
+        cv.line(img, (0, verticalAxis), (w, verticalAxis), (200, 180, 0), 3)
+    else:
+        cv.line(img, (horizontalAxis, 0), (horizontalAxis, h), (255,0,0), 3)
+
+    cv.putText(img,
+               str(numBlob),
+               (100, 100),
+               fontFace=cv.FONT_HERSHEY_PLAIN,
+               fontScale=3,
+               color=(0, 255, 255),
+               lineType=3,
+               thickness=2)
+
 
 def frameDiff(uri):
 
@@ -29,12 +48,24 @@ def frameDiff(uri):
     out_diff = cv.VideoWriter("out_diff.avi", out_fourcc, 25.0, (len(pre_img[0]), len(pre_img)), True)
 
     # previous blobs
-    prevBlobs = []
+    blobDetection = BlobDetetction()
+    blobCounting = BlobCounting(3*h//4, 3*w//4)
+
+    # detecting region
+    detectingRegion_minx = 0
+    detectingRegion_miny = h//2
+    detectingRegion_maxx = w
+    detectingRegion_maxy = h
+
+    #couting region
+    countingRegion_minx = 0
+    countingRegion_miny = h // 2
+    countingRegion_maxx = w
+    countingRegion_maxy = h
 
     while True:
         # recent frame
         ret, img = video.read()
-        # img = cv.resize(img, (w, h))
         img = pyrImg(img, w, h)
 
         img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -46,15 +77,22 @@ def frameDiff(uri):
         # update pre_img
         pre_img = img_gray
         pre_sub = sub
-
         # threshode
         ret, mask = cv.threshold(diff, 20, 255, cv.THRESH_BINARY)
         # kernel = np.ones((3,3), np.uint8)
         # mask = cv.dilate(mask, kernel)
         # mask = cv.morphologyEx(mask, cv.MORPH_OPEN,kernel)
-        blobs = blobDetection(mask, w, h, prevBlobs)
+        blobs = blobDetection.blobDetection(mask, w, h, detectingRegion_minx, detectingRegion_miny, detectingRegion_maxx, detectingRegion_maxy)
         frameBlobs(blobs, img)
 
+        numBlob = blobCounting.countVertical(blobDetection.prevBlobs, countingRegion_minx, countingRegion_miny, countingRegion_maxx, countingRegion_maxy)
+        # blobDetection.prevBlobs = np.copy(countedBlobs)
+        # for i in range(len(blobDetection.prevBlobs)):
+        #     blobDetection.prevBlobs[i].isLabelled = False
+        # print("prev len:", len(blobDetection.prevBlobs))
+
+
+        drawBlobCounting(numBlob, img, blobCounting.verticalAxis, blobCounting.horizontalAxis, w, h)
         # write video
         # out_diff.write(img)
 
@@ -238,72 +276,6 @@ def all(n, uri):
             break
         if key == ord(' '):
             cv.waitKey()
-
-
-def belongToAlreadyExistedBlob(x, y, blobs):
-
-    for i in range(len(blobs)):
-        blob = blobs[i]
-        if blob.isBelongToThisBlob(x,y):
-            blob.updateBoundary(x,y)
-            return True
-
-    return False
-
-
-def filterNoiseBlobs(blobs):
-    lenBlobs = len(blobs)
-    i=0
-    while i<lenBlobs:
-        blob = blobs[i]
-        if blob.isThisBlobNoise():
-            blobs.remove(blob)
-            lenBlobs-=1
-        else:
-            i+=1
-
-
-def indexBlobs(blobs):
-    for i in range(len(blobs)):
-        blobs[i].label = str(i)
-
-
-# def mapBlobLabel(blobs, prev_blobs):
-#     if len(prev_blobs) == 0:
-#         totalNumberOfBlob = len(blobs)
-#         return
-#     else:
-#         for i in range(blobs):
-#             for j in range(prev_blobs):
-#                 if not prev_blobs[j].isLabelled:
-#                         if blobs[i].isMapOtherBlob(prev_blobs[j]):
-#                             blobs[i].label = prev_blobs[j].label
-#                             blobs[i].isLabelled = True
-#                             prev_blobs[j].isLabelled = True
-#                             continue
-#
-#         for i in range(blobs):
-#             if not blobs[i].isLabelled:
-#                 blobs[i].label = str(totalNumberOfBlob)
-#
-
-
-def blobDetection(foreground, w, h, prevBlobs):
-    blobs = []
-
-    for i in range(h):
-        j=0
-        while j < w:
-            if foreground[i][j] == 255:
-                if not belongToAlreadyExistedBlob(j,i, blobs):
-                    # creat new blob that bound the current pixel
-                    blobs.append(Blob(str(len(blobs)),False,j,i,j,i))
-            j += 4
-
-    filterNoiseBlobs(blobs)
-    indexBlobs(blobs)
-    # mapBlobLabel(blobs, prevBlobs)
-    return blobs
 
 def frameBlobs(blobs, img):
     for i in range(len(blobs)):
