@@ -1,0 +1,2 @@
+class BlobDetetction:
+    pass

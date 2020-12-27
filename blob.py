@@ -3,10 +3,12 @@ import numpy as np
 class Blob:
     color = (0, 255, 0)
     thickness = 1
-    euclidDistanceThreshold = 4
-    noiseBlobAreaThreshold = 110
+    euclidDistanceThreshold = 10
+    noiseBlobAreaThreshold = 150
 
-    def __init__(self, minx, miny, maxx, maxy):
+    def __init__(self, label, isLabelled, minx, miny, maxx, maxy):
+        self.label = label
+        self.isLabelled = isLabelled
         self.minx = minx
         self.miny = miny
         self.maxx = maxx
@@ -19,7 +21,12 @@ class Blob:
         self.maxy = max(self.maxy, y)
 
     def calEuclidDistance(self, x1, y1, x2, y2):
-        euclid_distance = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+        # euclid_distance = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+        ###
+        # euclid distance is change to increase performance
+        euclid_distance = np.abs(x1 - x2) + np.abs(y1-y2)
+        ###
         return euclid_distance
 
     def isNear(self, x1, y1, x, y):
@@ -44,7 +51,11 @@ class Blob:
         b = x2 - x1
         c = -a*x1 -b*y1
 
-        distance = np.abs(a*x + b*y + c) / np.sqrt(a**2 + b**2)
+        # distance = np.abs(a*x + b*y + c) / np.sqrt(a**2 + b**2)
+        ###
+        # formula to cal distance is change to line below in order to increase performance
+        distance = np.abs(a*x + b*y + c) / (a + b)
+        ###
 
         if distance < self.euclidDistanceThreshold:
             return True
@@ -80,19 +91,14 @@ class Blob:
                     else:
                         return self.isNear(self.maxx, self.maxy, x, y)
 
-        centerx = (self.minx + self.maxx) // 2
-        centery = (self.miny + self.maxy) // 2
-
-        # euclid distance
-        educlid_distance = np.sqrt((centerx - x)**2 + (centery - y)**2)
-        if educlid_distance <= self.euclidDistanceThreshold:
+    def isMapOtherBlob(self, blob):
+        if self.isNear(self.minx, self.miny, blob.minx, blob.miny) and self.isNear(self.maxx, self.maxy, blob.maxx, blob.maxy):
             return True
         else:
             return False
 
     def getArea(self):
-        area = (self.maxx - self.minx)*(self.maxy - self.miny)
-        return area
+        return (self.maxx - self.minx)*(self.maxy - self.miny)
 
     def isThisBlobNoise(self):
         if self.getArea() < self.noiseBlobAreaThreshold:
