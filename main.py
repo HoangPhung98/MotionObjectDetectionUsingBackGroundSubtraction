@@ -75,10 +75,6 @@ def frameDiff(uri):
     out_fourcc = cv.VideoWriter_fourcc(*'XVID')
     out_diff = cv.VideoWriter("out_diff.avi", out_fourcc, 25.0, (len(pre_img[0]), len(pre_img)), True)
 
-
-
-
-
     # previous blobs
     blobDetection = BlobDetetction()
     blobCounting = BlobCounting(4 * h // 5, 4 * w // 5)
@@ -110,24 +106,18 @@ def frameDiff(uri):
         pre_img = img_gray
         pre_sub = sub
         # threshode
-        ret, mask = cv.threshold(diff, 20, 255, cv.THRESH_BINARY)
-        kernel = np.ones((5,5), np.uint8)
+        ret, mask = cv.threshold(diff, 15, 255, cv.THRESH_BINARY)
+        # kernel = np.ones((5,5), np.uint8)
         # mask = cv.dilate(mask, kernel)
-        mask = cv.morphologyEx(mask, cv.MORPH_CLOSE,kernel)
+        # mask = cv.morphologyEx(mask, cv.MORPH_CLOSE,kernel)
         blobs = blobDetection.blobDetection(mask, w, h, detectingRegion_minx, detectingRegion_miny, detectingRegion_maxx, detectingRegion_maxy)
         frameBlobs(blobs, img)
 
         numBlob = blobCounting.countVertical(blobDetection.prevBlobs)
-        # blobDetection.prevBlobs = np.copy(countedBlobs)
-        # for i in range(len(blobDetection.prevBlobs)):
-        #     blobDetection.prevBlobs[i].isLabelled = False
-        # print("prev len:", len(blobDetection.prevBlobs))
-
-
         drawBlobCounting(numBlob, img, blobCounting.verticalAxis, blobCounting.horizontalAxis, blobCounting.countingWidth, w, h)
         drawCurrentNumberOfBlob(blobs, img)
         # write video
-        out_diff.write(img)
+        # out_diff.write(img)
 
         cv.imshow("original", img)
         cv.imshow("mask_diff", mask)
@@ -141,39 +131,60 @@ def frameDiff(uri):
     cv.destroyAllWindows()
 
 def mean(n, uri):
-    # kernel_2d = np.ones((7, 7), np.float32) / 49
-    # kernel = np.ones((21,21),np.uint8)
 
     video = cv.VideoCapture(uri)
     ret, img = video.read()
-    img = cv.pyrDown(img)
-    img = cv.pyrDown(img)
+    img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    shape = img_gray.shape
+    img_gray = pyrImg(img_gray, shape[1], shape[0])
+
+    shape = img_gray.shape
+    h = shape[0]
+    w = shape[1]
+
+    cv.namedWindow("original")
+    cv.resizeWindow("original", w, h)
+    cv.namedWindow("mask_mean")
+    cv.resizeWindow("mask_mean", w, h)
+
     nframe = []
-    sum = np.zeros((len(img), len(img[0])))
+    sum = np.zeros((h, w))
     for i in range(n):
         ret, img = video.read()
-        img = cv.pyrDown(img)
-        img = cv.pyrDown(img)
+        img = pyrImg(img,w,h)
 
-        img = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
-        nframe.append(img)
-        sum = sum + img
+        img_gray = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
+        nframe.append(img_gray)
+        sum = sum + img_gray
     mean = np.uint8(sum // n)
 
     pos = 0
 
+    blobDetection = BlobDetetction()
+    blobCounting = BlobCounting(4 * h // 5, 4 * w // 5)
+    # detecting region
+    detectingRegion_minx = 0
+    detectingRegion_miny = h // 2
+    detectingRegion_maxx = w
+    detectingRegion_maxy = h
+
     while True:
         ret, img = video.read()
-        # img = cv.resize(img, (w, h))
-        img = cv.pyrDown(img)
-        img = cv.pyrDown(img)
-
+        img = pyrImg(img,w,h)
         img_gray = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
-        sub = cv.absdiff(img_gray, mean)
-        ret, mask = cv.threshold(sub, 30, 255, cv.THRESH_BINARY)
 
-        blobs = blobDetection(mask)
+        sub = cv.absdiff(img_gray, mean)
+        ret, mask = cv.threshold(sub, 25, 255, cv.THRESH_BINARY)
+
+        blobs = blobDetection.blobDetection(mask, w, h,
+                                            detectingRegion_minx, detectingRegion_miny,
+                                            detectingRegion_maxx, detectingRegion_maxy)
         frameBlobs(blobs, img)
+
+        numBlob = blobCounting.countVertical(blobDetection.prevBlobs)
+        drawBlobCounting(numBlob, img, blobCounting.verticalAxis, blobCounting.horizontalAxis,
+                         blobCounting.countingWidth, w, h)
+        drawCurrentNumberOfBlob(blobs, img)
 
         sum = (sum - nframe[pos] + img_gray)
         mean = np.uint8(sum // n)
@@ -183,13 +194,7 @@ def mean(n, uri):
         else:
             pos = 0
 
-        # contours, hierarchy = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-        # cv.drawContours(img, contours, -1, (0,255,0), 3)
 
-        cv.namedWindow("original")
-        cv.resizeWindow("original", len(mask[0]), len(mask))
-        cv.namedWindow("mask_mean")
-        cv.resizeWindow("mask_mean", len(mask[0]), len(mask))
         cv.imshow("original", img)
         cv.imshow("mask_mean", mask)
 
@@ -200,27 +205,57 @@ def mean(n, uri):
             cv.waitKey()
 
 def mog(uri):
-    backsub = cv.createBackgroundSubtractorMOG2()
+
     video = cv.VideoCapture(uri)
+    ret, img = video.read()
+    img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    shape = img_gray.shape
+    img_gray = pyrImg(img_gray, shape[1], shape[0])
+
+    shape = img_gray.shape
+    h = shape[0]
+    w = shape[1]
+
+    cv.namedWindow("original")
+    cv.resizeWindow("original", w, h)
+    cv.namedWindow("mask_mog")
+    cv.resizeWindow("mask_mog", w, h)
+
+    backsub = cv.createBackgroundSubtractorMOG2(history=500, varThreshold=60, detectShadows=True)
+
+
+    blobDetection = BlobDetetction()
+    blobCounting = BlobCounting(4 * h // 5, 4 * w // 5)
+    # detecting region
+    detectingRegion_minx = 0
+    detectingRegion_miny = h // 2
+    detectingRegion_maxx = w
+    detectingRegion_maxy = h
 
     while True:
         # recent frame
         ret, img = video.read()
-        img = cv.pyrDown(img)
-        img = cv.pyrDown(img)
-        # img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        img = pyrImg(img,w,h)
+        img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-        fgMask = backsub.apply(img)
-        # fgMask = cv.morphologyEx(fgMask, cv.MORPH_OPEN, (11, 11))
-        blobs = blobDetection(fgMask)
+        mask = backsub.apply(img_gray)
+        kernel = np.ones((3, 3), np.uint8)
+        # mask = cv.dilate(mask, kernel)
+        mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
+
+        blobs = blobDetection.blobDetection(mask, w, h,
+                                            detectingRegion_minx, detectingRegion_miny,
+                                            detectingRegion_maxx, detectingRegion_maxy)
         frameBlobs(blobs, img)
 
-        cv.namedWindow("original")
-        cv.resizeWindow("original",len(fgMask[0]), len(fgMask))
-        cv.namedWindow("mask_mog")
-        cv.resizeWindow("mask_mog", len(fgMask[0]), len(fgMask))
+        numBlob = blobCounting.countVertical(blobDetection.prevBlobs)
+        drawBlobCounting(numBlob, img, blobCounting.verticalAxis, blobCounting.horizontalAxis,
+                         blobCounting.countingWidth, w, h)
+        drawCurrentNumberOfBlob(blobs, img)
+
+
         cv.imshow("original", img)
-        cv.imshow("mask_mog", fgMask)
+        cv.imshow("mask_mog", mask)
 
         key = cv.waitKey(10)
         if key == ord('q'):
@@ -324,13 +359,6 @@ def frameBlobs(blobs, img):
                    thickness=2)
 
 def pyrImg(img, w, h):
-    # if w>=1280 and h>=720:
-    #     img = cv.pyrDown(img)
-    #     img = cv.pyrDown(img)
-    #     return img
-    # else:
-    #     img = cv.pyrDown(img)
-    #     return img
     return cv.pyrDown(img)
 
 # main
@@ -352,11 +380,10 @@ uri_trafficgood3 = r"traffic_good_3.mp4"
 # frameDiff(uri_human)
 # frameDiff(uri_topdown2)
 # frameDiff(uri_trafficgood)
+
 frameDiff(uri_trafficgood3)
 
-# mean(5, uri_road)
-# mean(5, uri_moto_vietnam)
+# mean(3, uri_trafficgood3)
 
-
-# mog(uri_road)
+# mog(uri_trafficgood3)
 
