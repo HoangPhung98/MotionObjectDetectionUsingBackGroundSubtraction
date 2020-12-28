@@ -7,7 +7,7 @@ class Blob:
     euclidDistanceThresholdBetweenBlobs2 = 10
 
     euclidDistanceThresholdMovingObject = 30
-    noiseBlobAreaThreshold = 180
+    noiseBlobAreaThreshold = 200
     maxDisappearTime = 3
 
     def __init__(self, label, isLabelled, minx, miny, maxx, maxy):

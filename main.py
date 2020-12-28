@@ -5,6 +5,8 @@ from blobDetection import BlobDetetction
 from blobCounting import BlobCounting
 
 totalNumberOfBlob = 0
+realNumberOfCar = 16
+numBlob=0
 
 
 def drawBlobCounting(numBlob, img, verticalAxis, horizontalAxis, countingWidth, w, h):
@@ -90,10 +92,18 @@ def frameDiff(uri):
     # countingRegion_miny = blobCounting.verticalAxis - 50
     # countingRegion_maxx = w
     # countingRegion_maxy = h
+    f = open("diff.txt","a")
+
 
     while True:
         # recent frame
         ret, img = video.read()
+        print(ret)
+        if ret == False:
+            f.write(str(numBlob))
+            f.write("\n")
+            f.write(str(realNumberOfCar / numBlob))
+            f.close()
         img = pyrImg(img, w, h)
 
         img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -130,10 +140,14 @@ def frameDiff(uri):
 
     cv.destroyAllWindows()
 
+
 def mean(n, uri):
 
     video = cv.VideoCapture(uri)
     ret, img = video.read()
+
+
+
     img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
     shape = img_gray.shape
     img_gray = pyrImg(img_gray, shape[1], shape[0])
@@ -168,8 +182,18 @@ def mean(n, uri):
     detectingRegion_maxx = w
     detectingRegion_maxy = h
 
+    f = open("mean.txt","a")
+
+
     while True:
         ret, img = video.read()
+
+        if ret == False:
+            f.write(str(numBlob))
+            f.write("\n")
+            f.write(str(realNumberOfCar / numBlob))
+            f.close()
+
         img = pyrImg(img,w,h)
         img_gray = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
 
@@ -204,6 +228,8 @@ def mean(n, uri):
         if key == ord(' '):
             cv.waitKey()
 
+    cv.destroyAllWindows()
+
 def mog(uri):
 
     video = cv.VideoCapture(uri)
@@ -221,7 +247,7 @@ def mog(uri):
     cv.namedWindow("mask_mog")
     cv.resizeWindow("mask_mog", w, h)
 
-    backsub = cv.createBackgroundSubtractorMOG2(history=500, varThreshold=60, detectShadows=True)
+    backsub = cv.createBackgroundSubtractorMOG2(history=500, varThreshold=50, detectShadows=True)
 
 
     blobDetection = BlobDetetction()
@@ -232,9 +258,18 @@ def mog(uri):
     detectingRegion_maxx = w
     detectingRegion_maxy = h
 
+    f = open("mog.txt","a")
+
     while True:
         # recent frame
         ret, img = video.read()
+
+        if ret == False:
+            f.write(str(numBlob))
+            f.write("\n")
+            f.write(str(realNumberOfCar / numBlob))
+            f.close()
+
         img = pyrImg(img,w,h)
         img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
@@ -262,6 +297,8 @@ def mog(uri):
             break
         if key == ord(' '):
             cv.waitKey()
+    f.write(blobDetection.totalNumberOfBlob)
+    f.close()
 
 def all(n, uri):
     video = cv.VideoCapture(uri)
@@ -373,6 +410,8 @@ uri_trafficgood = r"traffic_good.mp4"
 uri_trafficgood2 = r"traffic_good_2.mp4"
 
 uri_trafficgood3 = r"traffic_good_3.mp4"
+uri_trafficgood3cut = r"traffic_good_3_cut.mp4"
+
 
 #
 # frameDiff(uri_road)
@@ -381,9 +420,9 @@ uri_trafficgood3 = r"traffic_good_3.mp4"
 # frameDiff(uri_topdown2)
 # frameDiff(uri_trafficgood)
 
-frameDiff(uri_trafficgood3)
+# frameDiff(uri_trafficgood3cut)
 
-# mean(3, uri_trafficgood3)
+# mean(3, uri_trafficgood3cut)
 
-# mog(uri_trafficgood3)
+mog(uri_trafficgood3cut)
 
