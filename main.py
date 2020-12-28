@@ -98,7 +98,6 @@ def frameDiff(uri):
     while True:
         # recent frame
         ret, img = video.read()
-        print(ret)
         if ret == False:
             f.write(str(numBlob))
             f.write("\n")
@@ -126,8 +125,9 @@ def frameDiff(uri):
         numBlob = blobCounting.countVertical(blobDetection.prevBlobs)
         drawBlobCounting(numBlob, img, blobCounting.verticalAxis, blobCounting.horizontalAxis, blobCounting.countingWidth, w, h)
         drawCurrentNumberOfBlob(blobs, img)
+
         # write video
-        # out_diff.write(img)
+        out_diff.write(img)
 
         cv.imshow("original", img)
         cv.imshow("mask_diff", mask)
@@ -184,7 +184,8 @@ def mean(n, uri):
 
     f = open("mean.txt","a")
 
-
+    out_fourcc = cv.VideoWriter_fourcc(*'XVID')
+    out_mean = cv.VideoWriter("out_mean.avi", out_fourcc, 25.0, (w, h), True)
     while True:
         ret, img = video.read()
 
@@ -218,6 +219,8 @@ def mean(n, uri):
         else:
             pos = 0
 
+        # write video
+        out_mean.write(img)
 
         cv.imshow("original", img)
         cv.imshow("mask_mean", mask)
@@ -260,6 +263,9 @@ def mog(uri):
 
     f = open("mog.txt","a")
 
+    out_fourcc = cv.VideoWriter_fourcc(*'XVID')
+    out_mog = cv.VideoWriter("out_mog.avi", out_fourcc, 25.0, (w, h), True)
+
     while True:
         # recent frame
         ret, img = video.read()
@@ -288,6 +294,8 @@ def mog(uri):
                          blobCounting.countingWidth, w, h)
         drawCurrentNumberOfBlob(blobs, img)
 
+        # write video
+        out_mog.write(img)
 
         cv.imshow("original", img)
         cv.imshow("mask_mog", mask)
@@ -386,14 +394,14 @@ def frameBlobs(blobs, img):
     for i in range(len(blobs)):
         blob = blobs[i]
         cv.rectangle(img, (blob.minx-1, blob.miny-1), (blob.maxx+1, blob.maxy+1), blob.color, blob.thickness)
-        cv.putText(img,
-                   blob.label,
-                   (blob.minx, blob.miny),
-                   fontFace=cv.FONT_HERSHEY_PLAIN,
-                   fontScale=2,
-                   color=(0,255,255),
-                   lineType=3,
-                   thickness=2)
+        # cv.putText(img,
+        #            blob.label,
+        #            (blob.minx, blob.miny),
+        #            fontFace=cv.FONT_HERSHEY_PLAIN,
+        #            fontScale=2,
+        #            color=(0,255,255),
+        #            lineType=3,
+        #            thickness=2)
 
 def pyrImg(img, w, h):
     return cv.pyrDown(img)
@@ -420,9 +428,9 @@ uri_trafficgood3cut = r"traffic_good_3_cut.mp4"
 # frameDiff(uri_topdown2)
 # frameDiff(uri_trafficgood)
 
-# frameDiff(uri_trafficgood3cut)
+frameDiff(uri_trafficgood3cut)
 
 # mean(3, uri_trafficgood3cut)
 
-mog(uri_trafficgood3cut)
+# mog(uri_trafficgood3cut)
 

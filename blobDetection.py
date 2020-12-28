@@ -32,12 +32,13 @@ class BlobDetetction:
             self.prevBlobs = self.blobs
             return
         else:
-            for x in self.prevBlobs:
-                print(x.label, end=" ")
-            print()
-            for x in self.blobs:
-                print(x.label, end=" ")
-            print()
+            # for x in self.prevBlobs:
+            #     print(x.label, end=" ")
+            # print()
+            # for x in self.blobs:
+            #     print(x.label, end=" ")
+            # print()
+            numLabeled = 0
             for i in range(len(self.blobs)):
                 for j in range(len(self.prevBlobs)):
                     if not self.prevBlobs[j].isLabelled:
@@ -46,21 +47,23 @@ class BlobDetetction:
                                 self.blobs[i].isCounted = self.prevBlobs[j].isCounted
                                 self.blobs[i].isLabelled = True
                                 self.prevBlobs[j].isLabelled = True
-                                print(self.blobs[i].label,"-",self.prevBlobs[j].label)
+                                # print(self.blobs[i].label,"-",self.prevBlobs[j].label)
+                                numLabeled+=1
                                 continue
 
             for i in range(len(self.blobs)):
                 if not self.blobs[i].isLabelled:
                     self.totalNumberOfBlob += 1
                     self.blobs[i].label = str(self.totalNumberOfBlob)
-                    print(i,"--",self.totalNumberOfBlob)
-
-            for x in self.prevBlobs:
-                print(x.label, end=" ")
-            print()
-            for x in self.blobs:
-                print(x.label, end=" ")
-            print("***********")
+                    self.blobs[i].label = str(numLabeled)
+                    # print(i,"--",self.totalNumberOfBlob)
+            #
+            # for x in self.prevBlobs:
+            #     print(x.label, end=" ")
+            # print()
+            # for x in self.blobs:
+            #     print(x.label, end=" ")
+            # print("***********")
 
             self.prevBlobs = np.copy(self.blobs)
             for i in range(len(self.prevBlobs)):
