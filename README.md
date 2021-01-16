@@ -1,9 +1,9 @@
 # MotionObjectDetectionUsingBackGroundSubtraction
 ## MOG - Mixed of Gaussian
-[![Watch the video](https://imgur.com/a/040HT4d)](https://youtu.be/Rt1aX3KQrM0)
+[![Watch the video](https://i.imgur.com/wLdcCzi.png)](https://youtu.be/Rt1aX3KQrM0)
 
 ## Mean filter
-[![Watch the video](https://imgur.com/IOoJoKO)](https://youtu.be/Ust4hj2bSFs)
+[![Watch the video](https://i.imgur.com/IOoJoKO.png)](https://youtu.be/Ust4hj2bSFs)
 
 ## Frame differencing
-[![Watch the video](https://imgur.com/undefined)](https://youtu.be/NAnRc2AwoiI)
+[![Watch the video](https://i.imgur.com/xqosxWT.png)](https://youtu.be/NAnRc2AwoiI)
